@@ -1,0 +1,41 @@
+`include "cache_test.v"
+
+module simulacao;
+
+   reg clock;
+    
+	reg [4:0] address;
+	wire [2:0] data;
+	wire wren;
+	wire [2:0] outData;
+   wire hit;
+   wire write_mem;
+
+    cache_test L1 (address, clock, data, wren, outData, hit, write_mem);
+
+    initial begin
+        clock = 0;
+    end
+
+
+	always @(posedge clock)begin
+        clock = ~clock;
+        #1
+        address = 5'b10000; //via[0][0] hit
+        clock = ~clock;
+        #1
+        clock = ~clock;
+        #1
+
+        if(hit == 1)begin
+            $display("HIT!");
+        end
+        else begin
+            $display("MISS!");
+        end
+
+    end
+		
+
+endmodule
+    

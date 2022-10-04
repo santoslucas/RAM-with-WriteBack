@@ -1,0 +1,147 @@
+//Lara Gama Santos e Lucas Santos Rodrigues
+// cache (L1) - 2 vias
+
+//`include "memoria.v"
+
+module cache_test (
+  address,
+  clock,
+  data,
+  wren,
+  dataOUT,
+	hit,
+	write_mem
+);
+
+  input [4:0] address;
+  input clock;
+  input [2:0] data;
+  input wren;
+
+  output [2:0] dataOUT;
+  output hit;
+  output write_mem;
+
+  wire [1:0] index = address[1:0];  //separa os bits do índice
+  wire [2:0] tag = address[4:2];  //separa os bits da tag
+  
+  reg [7:0] aux_dataOUT;
+  //wire [7:0] dataOUT = aux_dataOUT[7:0];
+  reg aux_hit;
+  reg aux_write_mem;
+  
+  reg [8:0] via[3:0][1:0];  //v lru  dirty  tag  data
+									 //0  0     0    000  000
+
+  initial begin
+    via[0][0] = 9'b000100011;
+	 via[0][1] = 9'b110101100;
+	 via[1][0] = 9'b100000011;
+	 via[1][1] = 9'b110001111;
+	 via[2][0] = 9'bxxxxxxxxx;
+	 via[2][1] = 9'bxxxxxxxxx;
+	 via[3][0] = 9'b110xxx011;
+	 via[3][1] = 9'bxxxxxxxxx;
+
+   aux_write_mem = 0;
+  end
+
+  //escrita na cache -> instrução load que deu miss
+  //escrita na memória -> instrução de store que dirty == 1
+
+  // LEITURA na cache
+  always @(negedge clock) begin
+    aux_write_mem = 0;
+    //DEFINE QUAL ENTRADA SERÁ ACESSADA
+    //ENTRADA 0
+    if (index == 0) begin         
+      if(/*tag*/ via[0][0][5:3] == tag && /*bit v*/ via[0][0][8] == 1 ) begin //VIA 1
+        aux_dataOUT = via[0][0][2:0];
+        aux_hit = 1;
+        via[0][0][7] = 1;
+        via[0][1][7] = 0;
+      end
+
+      else if(via[0][1][5:3] == tag && via[0][1][8] == 1 ) begin //VIA 2
+        aux_dataOUT = via[0][1][2:0];
+        aux_hit = 1;
+        via[0][0][7] = 0;
+        via[0][1][7] = 1;
+      end
+
+      else begin
+        aux_hit = 0;
+      end
+     
+    end 
+    
+    //ENTRADA 1
+    else if (index == 1) begin
+      if(via[1][0][5:3] == tag && via[1][0][8] == 1 ) begin //VIA 1
+        aux_dataOUT = via[1][0][2:0];
+        aux_hit = 1;
+        via[1][0][7] = 1;
+        via[1][1][7] = 0;
+        
+      end
+
+      else if(via[1][1][5:3] == tag && via[1][1][8] == 1 ) begin //VIA 2
+        aux_dataOUT = via[1][1][2:0];
+        aux_hit = 1;
+        via[1][0][7] = 0;
+        via[1][1][7] = 1;
+      end
+
+      else begin
+        aux_hit = 0;
+      end
+    end 
+    
+    //ENTRADA 2
+    else if (index == 2) begin
+      if(via[2][0][5:3] == tag && via[2][0][8] == 1 ) begin //VIA 1
+        aux_dataOUT = via[2][0][2:0];
+        aux_hit = 1;
+        via[2][0][7] = 1;
+        via[2][1][7] = 0;
+      end
+
+      else if(via[2][1][5:3] == tag && via[2][1][8] == 1 ) begin //VIA 2
+        aux_dataOUT = via[2][1][2:0];
+        aux_hit = 1;
+        via[2][0][7] = 0;
+        via[2][1][7] = 1;
+      end
+
+      else begin
+        aux_hit = 0;
+      end
+    end 
+    
+    //ENTRADA 3
+    else if (index == 3) begin
+      if(via[3][0][5:3] == tag && via[3][0][8] == 1 ) begin //VIA 1
+        aux_dataOUT = via[3][0][2:0];
+        aux_hit = 1;
+        via[3][0][7] = 1;
+        via[3][1][7] = 0;
+      end
+
+      else if(via[3][1][5:3] == tag && via[3][1][8] == 1  ) begin //VIA 2
+        aux_dataOUT = via[3][1][2:0];
+        aux_hit = 1;
+        via[3][0][7] = 0;
+        via[3][1][7] = 1;
+      end
+
+      else begin
+        aux_hit = 0;
+      end
+    end
+  end 
+
+  assign dataOUT = aux_dataOUT;
+  assign hit = aux_hit;
+  assign write_mem = aux_write_mem;
+
+endmodule
